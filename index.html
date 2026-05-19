@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTA:SA Cummunity Lanka</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fade-in { animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.01); }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        
+        body {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+    </style>
+</head>
+<body class="bg-[#02040a] text-white min-h-screen font-sans antialiased p-4 md:p-8 relative overflow-x-hidden">
+
+    <div class="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[150px] pointer-events-none"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[130px] pointer-events-none"></div>
+
+    <div class="max-w-7xl mx-auto bg-white/[0.02] backdrop-blur-2xl border border-white/[0.06] rounded-[32px] p-6 md:p-8 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.7)] space-y-6 relative">
+        
+        <div id="clientView" class="block space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="flex items-start space-x-3">
+                    <div class="p-3 bg-blue-500/10 text-blue-400 rounded-2xl border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.15)]">
+                        <i class="fa-solid fa-chart-line text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-teal-400 uppercase">Sri Lanka MTA Servers Ranking And Player Reviews</h1>
+                        <p class="text-gray-400 text-xs font-medium mt-0.5"><span id="syncStatus" class="text-teal-400 flex items-center gap-1.5"><i class="fa-solid fa-bolt animate-pulse"></i> Engine Active</span></p>
+                    </div>
+                </div>
+                <button onclick="switchView('loginView')" class="bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all duration-300 flex items-center space-x-1.5 backdrop-blur-md shadow-lg">
+                    <i class="fa-solid fa-user-shield text-xs text-blue-400"></i> <span>Admin Dashboard</span>
+                </button>
+            </div>
+
+            <div class="w-full overflow-x-auto pt-2">
+                <div class="min-w-[900px] space-y-2">
+                    <div class="flex items-center px-5 py-2 text-xs font-bold tracking-wider text-gray-500 uppercase">
+                        <div class="w-[8%]">RANK</div>
+                        <div class="w-[35%]">SERVER </div>
+                        <div class="w-[22%]">CONNECTION ADDRESS</div>
+                        <div class="w-[35%] text-blue-400">👑 RANKS Of Sri Lanak</div>
+                    </div>
+                    <div id="clientChartRows" class="space-y-2"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="loginView" class="hidden min-h-[400px] flex flex-col items-center justify-center max-w-md mx-auto py-8">
+            <div class="w-full bg-black/40 backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-8 shadow-2xl text-center space-y-6 animate-fade-in">
+                <div class="inline-flex p-4 bg-red-500/10 text-red-400 rounded-2xl border border-red-500/20">
+                    <i class="fa-solid fa-shield-halved text-2xl"></i>
+                </div>
+                <input type="password" id="adminPassword" placeholder="Enter Protected Key" class="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-center text-sm text-red-400 font-sans focus:outline-none focus:border-red-500/50 transition-all">
+                <button onclick="handleLogin()" class="w-full bg-gradient-to-r from-red-600 to-red-500 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-red-600/20">Authenticate</button>
+                <button onclick="switchView('clientView')" class="w-full text-gray-400 text-xs mt-2 hover:text-white transition">Cancel & Go Back</button>
+            </div>
+        </div>
+
+        <div id="adminView" class="hidden space-y-6 animate-fade-in">
+            <div class="flex justify-between items-center pb-4 border-b border-white/[0.06]">
+                <span class="text-red-400 font-bold uppercase tracking-widest text-xs flex items-center gap-1.5"><i class="fa-solid fa-gears animate-spin text-sm"></i> Live Terminal</span>
+                <button onclick="logout()" class="bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 text-xs px-4 py-2 rounded-xl transition">Exit Session</button>
+            </div>
+
+            <div class="bg-white/[0.02] border border-white/[0.06] backdrop-blur-md p-4 rounded-2xl flex flex-col md:flex-row items-center gap-3 shadow-inner">
+                <input type="text" id="srvName" placeholder="Server Identity Name" class="bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-xs w-full md:w-[40%] text-white focus:outline-none">
+                <input type="text" id="srvIp" placeholder="IP Gateway Location" class="bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-xs w-full md:w-[30%] text-white focus:outline-none">
+                <button onclick="addServer()" class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs w-full md:w-auto">Create Instance</button>
+            </div>
+
+            <div class="min-w-[950px] overflow-x-auto space-y-2">
+                <div class="flex items-center px-4 py-2 text-xs font-bold tracking-wider text-gray-500 uppercase border-b border-white/[0.06]">
+                    <div class="w-[8%] text-center">POSITION</div>
+                    <div class="w-[18%]">OBJECT TITLE</div>
+                    <div class="w-[12%]">GATEWAY IP</div>
+                    <div class="w-[42%] text-blue-400">👑 RANKS CONFIGURATOR</div>
+                    <div class="w-[20%] text-center">MANAGEMENT INTERFACE</div>
+                </div>
+                <div class="divide-y divide-white/[0.02]" id="adminChartRows"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="previewModal" class="fixed inset-0 bg-black/60 backdrop-blur-xl hidden items-center justify-center p-4 z-50">
+        <div class="bg-black/40 border border-white/[0.08] backdrop-blur-2xl w-full max-w-3xl rounded-[32px] p-6 md:p-8 space-y-6 max-h-[90vh] overflow-y-auto relative shadow-2xl animate-fade-in">
+            <button onclick="closePreview()" class="absolute top-5 right-5 text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/[0.06] pb-4">
+                <div>
+                    <h2 id="modalServerName" class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300 uppercase">Server Name</h2>
+                    <p class="text-[11px] text-gray-400 mt-1"><i class="fa-solid fa-user-crown text-amber-400 mr-1.5"></i>Founder: <span id="modalOwner" class="text-white font-semibold">Owner Name</span></p>
+                </div>
+                <a id="modalDiscord" href="#" target="_blank" class="bg-[#5865F2] text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center space-x-2 shadow-lg">
+                    <i class="fa-brands fa-discord text-base"></i> <span>Connect Discord</span>
+                </a>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div class="bg-white/[0.01] border border-white/[0.05] p-4 rounded-2xl"><h3 class="text-xs font-extrabold text-blue-400 uppercase mb-2">Documentation</h3><p id="modalDescription" class="text-xs text-gray-300 leading-relaxed"></p></div>
+                    <div class="bg-white/[0.01] border border-white/[0.05] p-4 rounded-2xl"><h3 class="text-xs font-extrabold text-red-400 uppercase mb-2">Staff Directory</h3><p id="modalAdmins" class="text-xs text-gray-300 whitespace-pre-line font-mono"></p></div>
+                </div>
+                <div class="space-y-4 flex flex-col">
+                    <div class="bg-white/[0.01] border border-white/[0.05] p-4 rounded-2xl flex-1 flex flex-col"><h3 class="text-xs font-extrabold text-teal-400 uppercase mb-3">Community Reviews</h3><div id="modalReviewsContainer" class="space-y-2 overflow-y-auto max-h-[180px] flex-1 pr-1 text-xs"></div></div>
+                    <div class="bg-white/[0.03] border border-white/10 p-3 rounded-2xl space-y-2">
+                        <div class="flex gap-2">
+                            <input type="text" id="reviewUser" placeholder="name" class="bg-black/40 border border-white/10 rounded-lg px-2.5 py-2 text-xs w-[35%] text-white focus:outline-none">
+                            <input type="text" id="reviewText" placeholder="Write feedback..." class="bg-black/40 border border-white/10 rounded-lg px-2.5 py-2 text-xs w-[65%] text-white focus:outline-none">
+                        </div>
+                        <button id="submitReviewBtn" class="w-full bg-teal-600 text-white font-bold py-2 rounded-lg text-[10px] uppercase">Submit Review</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="adminEditModal" class="fixed inset-0 bg-black/60 backdrop-blur-xl hidden items-center justify-center p-4 z-50">
+        <div class="bg-black/50 border border-white/10 backdrop-blur-2xl w-full max-w-2xl rounded-[28px] p-6 space-y-5 shadow-2xl animate-fade-in relative">
+            <button onclick="closeAdminEdit()" class="absolute top-5 right-5 text-gray-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            <h2 class="text-xs font-black text-red-400 uppercase tracking-widest"><i class="fa-solid fa-pen-to-square mr-1"></i> Adjust Metadata & Manage Reviews</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-gray-400 mb-1">Owner Identity</label>
+                        <input type="text" id="editOwner" class="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-1">Discord Gateway</label>
+                        <input type="text" id="editDiscord" class="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-1">Server overview</label>
+                        <textarea id="editDescription" rows="2" class="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none resize-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-1">Staff Directory</label>
+                        <textarea id="editAdmins" rows="2" class="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 text-white focus:outline-none resize-none"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex flex-col bg-black/30 border border-white/[0.05] p-3 rounded-2xl h-full">
+                    <span class="text-red-400 font-bold text-[11px] uppercase mb-2 flex items-center gap-1"><i class="fa-solid fa-comments"></i> Delete Player Reviews</span>
+                    <div id="adminReviewsManagerList" class="space-y-2 overflow-y-auto max-h-[220px] flex-1 pr-1">
+                        </div>
+                </div>
+            </div>
+
+            <button id="saveDetailsBtn" class="w-full bg-gradient-to-r from-red-600 to-red-500 text-white font-bold py-3 rounded-xl uppercase shadow-lg text-xs">Commit Manifest Data</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === "F12") { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C' || e.key === 'i' || e.key === 'j' || e.key === 'c')) { e.preventDefault(); return false; }
+            if (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.key === 'S' || e.key === 's')) { e.preventDefault(); return false; }
+        });
+
+        setInterval(function() {
+            const before = new Date().getTime();
+            debugger;
+            const after = new Date().getTime();
+            if (after - before > 100) {
+                document.body.innerHTML = "<div class='flex items-center justify-center min-h-screen text-red-500 font-bold uppercase tracking-widest text-sm'>Security Violation: Developer Tools Detected.</div>";
+            }
+        }, 1000);
+    </script>
+
+    <script>
+        const SUPABASE_URL = "https://hmkrdasargzzrhmmvnkz.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_gGhu2eoVeeyStVUVM8P6Vg_Y0FqHmWe"; 
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let serverData = [];
+        let activePreviewId = null;
+        let activeAdminEditId = null;
+
+        function initSpeedEngine() {
+            const cachedData = localStorage.getItem('mtasa_hub_cache');
+            if (cachedData) {
+                serverData = JSON.parse(cachedData);
+                updateUI();
+            }
+            loadFromSupabase();
+        }
+
+        async function loadFromSupabase() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('mtasa_rankings')
+                    .select('*')
+                    .order('position_order', { ascending: true });
+
+                if (error) throw error;
+                serverData = data || [];
+                localStorage.setItem('mtasa_hub_cache', JSON.stringify(serverData));
+                updateUI();
+                if (activePreviewId) refreshPreviewModal();
+                if (activeAdminEditId) renderAdminReviewsManager(activeAdminEditId);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function updateUI() {
+            renderClientEngine();
+            if (!document.getElementById('adminView').classList.contains('hidden')) renderAdminEngine();
+        }
+
+        async function addServer() {
+            const nameInput = document.getElementById('srvName');
+            const ipInput = document.getElementById('srvIp');
+            if(!nameInput.value || !ipInput.value) return;
+
+            const name = nameInput.value.trim();
+            const ip = ipInput.value.trim();
+            const nextOrder = serverData.length > 0 ? serverData[serverData.length - 1].position_order + 1 : 1;
+            const tempId = Date.now();
+
+            const localItem = { 
+                id: tempId, server_id: String(tempId), name, ip, ranks: [], position_order: nextOrder,
+                description: 'No description provided.', owner_name: 'Unknown', discord_url: '', admins: 'None', reviews: []
+            };
+            serverData.push(localItem);
+            updateUI();
+            nameInput.value = ''; ipInput.value = '';
+
+            const { data, error } = await supabaseClient
+                .from('mtasa_rankings')
+                .insert([{ server_id: localItem.server_id, name, ip, ranks: [], position_order: nextOrder }])
+                .select();
+
+            if (error) {
+                serverData = serverData.filter(s => s.id !== tempId);
+                updateUI();
+            } else if (data && data[0]) {
+                const idx = serverData.findIndex(s => s.id === tempId);
+                if (idx !== -1) {
+                    serverData[idx].id = data[0].id;
+                    localStorage.setItem('mtasa_hub_cache', JSON.stringify(serverData));
+                }
+            }
+        }
+
+        function openPreview(id) {
+            activePreviewId = id;
+            refreshPreviewModal();
+            document.getElementById('previewModal').classList.remove('hidden');
+            document.getElementById('previewModal').classList.add('flex');
+        }
+
+        function closePreview() {
+            activePreviewId = null;
+            document.getElementById('previewModal').classList.add('hidden');
+            document.getElementById('previewModal').classList.remove('flex');
+        }
+
+        function refreshPreviewModal() {
+            const server = serverData.find(s => s.id === activePreviewId);
+            if (!server) return;
+
+            document.getElementById('modalServerName').innerText = server.name;
+            document.getElementById('modalOwner').innerText = server.owner_name || 'Unknown';
+            document.getElementById('modalDescription').innerText = server.description || 'No data logged.';
+            document.getElementById('modalAdmins').innerText = server.admins || 'None';
+
+            const dcBtn = document.getElementById('modalDiscord');
+            if(server.discord_url) {
+                dcBtn.href = server.discord_url;
+                dcBtn.style.display = 'flex';
+            } else { dcBtn.style.display = 'none'; }
+
+            const reviewsHost = document.getElementById('modalReviewsContainer');
+            reviewsHost.innerHTML = '';
+            const revs = server.reviews || [];
+            if(revs.length === 0) {
+                reviewsHost.innerHTML = `<span class="text-gray-600 italic">No community feedback.</span>`;
+            } else {
+                revs.forEach(r => {
+                    const rDiv = document.createElement('div');
+                    rDiv.className = "bg-white/[0.02] border border-white/[0.04] p-2.5 rounded-xl space-y-0.5";
+                    rDiv.innerHTML = `<div class="flex justify-between text-[10px] text-teal-400 font-bold"><span>@${r.user}</span><span class="text-gray-500">${r.date}</span></div><p class="text-gray-300">${r.text}</p>`;
+                    reviewsHost.appendChild(rDiv);
+                });
+            }
+            document.getElementById('submitReviewBtn').onclick = () => commitReviewInstance(server.id);
+        }
+
+        async function commitReviewInstance(id) {
+            const uInput = document.getElementById('reviewUser');
+            const tInput = document.getElementById('reviewText');
+            if(!uInput.value.trim() || !tInput.value.trim()) return;
+
+            const server = serverData.find(s => s.id === id);
+            if(!server) return;
+
+            const reviewNode = { user: uInput.value.trim(), text: tInput.value.trim(), date: new Date().toLocaleDateString() };
+            server.reviews = server.reviews ? [...server.reviews] : [];
+            server.reviews.push(reviewNode);
+            
+            refreshPreviewModal();
+            tInput.value = '';
+            localStorage.setItem('mtasa_hub_cache', JSON.stringify(serverData));
+
+            await supabaseClient.from('mtasa_rankings').update({ reviews: server.reviews }).eq('id', id);
+        }
+
+        // --- UPGRADED ADMIN CONFIG EDITOR ---
+        function openAdminEdit(id) {
+            const server = serverData.find(s => s.id === id);
+            if(!server) return;
+            activeAdminEditId = id;
+
+            document.getElementById('editOwner').value = server.owner_name || '';
+            document.getElementById('editDiscord').value = server.discord_url || '';
+            document.getElementById('editDescription').value = server.description || '';
+            document.getElementById('editAdmins').value = server.admins || '';
+
+            renderAdminReviewsManager(id);
+
+            document.getElementById('adminEditModal').classList.remove('hidden');
+            document.getElementById('adminEditModal').classList.add('flex');
+            document.getElementById('saveDetailsBtn').onclick = commitAdminMeta;
+        }
+
+        function renderAdminReviewsManager(id) {
+            const server = serverData.find(s => s.id === id);
+            const container = document.getElementById('adminReviewsManagerList');
+            if (!server || !container) return;
+
+            container.innerHTML = '';
+            const revs = server.reviews || [];
+
+            if (revs.length === 0) {
+                container.innerHTML = `<span class="text-gray-600 italic text-xs">No reviews logs found.</span>`;
+                return;
+            }
+
+            revs.forEach((r, idx) => {
+                const item = document.createElement('div');
+                item.className = "flex justify-between items-start bg-white/[0.02] border border-white/[0.05] p-2 rounded-xl text-[11px] space-x-2";
+                item.innerHTML = `
+                    <div class="flex-1 space-y-0.5">
+                        <div class="text-red-400 font-bold">@${r.user} <span class="text-gray-500 font-normal">(${r.date})</span></div>
+                        <p class="text-gray-300 leading-tight">${r.text}</p>
+                    </div>
+                    <button onclick="deleteReviewByAdmin(${id}, ${idx})" class="text-red-500 hover:text-red-400 p-1 bg-red-500/10 rounded-lg self-center transition"><i class="fa-solid fa-trash-can"></i></button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function deleteReviewByAdmin(serverId, reviewIndex) {
+            const server = serverData.find(s => s.id === serverId);
+            if (!server || !server.reviews) return;
+
+            // Remove review locally
+            server.reviews.splice(reviewIndex, 1);
+            
+            // Re-render the reviews manager and global data
+            renderAdminReviewsManager(serverId);
+            localStorage.setItem('mtasa_hub_cache', JSON.stringify(serverData));
+
+            // Sync with DB
+            await supabaseClient.from('mtasa_rankings').update({ reviews: server.reviews }).eq('id', serverId);
+        }
+
+        function closeAdminEdit() {
+            activeAdminEditId = null;
+            document.getElementById('adminEditModal').classList.add('hidden');
+            document.getElementById('adminEditModal').classList.remove('flex');
+        }
+
+        async function commitAdminMeta() {
+            if(!activeAdminEditId) return;
+            const id = activeAdminEditId;
+            const server = serverData.find(s => s.id === id);
+            if(!server) return;
+
+            server.owner_name = document.getElementById('editOwner').value.trim();
+            server.discord_url = document.getElementById('editDiscord').value.trim();
+            server.description = document.getElementById('editDescription').value.trim();
+            server.admins = document.getElementById('editAdmins').value.trim();
+
+            updateUI();
+            closeAdminEdit();
+            localStorage.setItem('mtasa_hub_cache', JSON.stringify(serverData));
+
+            await supabaseClient.from('mtasa_rankings').update({
+                owner_name: server.owner_name, discord_url: server.discord_url,
+                description: server.description, admins: server.admins
+            }).eq('id', id);
+        }
+
+        async function addInlineRank(id) {
+            const input = document.getElementById(`inlineInput-${id}`);
+            const color = document.getElementById(`inlineColor-${id}`);
+            if(!input.value.trim()) return;
+
+            const server = serverData.find(s => s.id === id);
+            if(server) {
+                server.ranks = server.ranks ? [...server.ranks] : [];
+                server.ranks.push({ name: input.value.trim(), color: color.value });
+                updateUI();
+                localStorage.setItem('mtasa_hub_cache', JSON.stringify(serverData));
+                await supabaseClient.from('mtasa_rankings').update({ ranks: server.ranks }).eq('id', id);
+            }
+        }
+
+        async function moveRank(id, rankIndex, direction) {
+            const server = serverData.find(s => s.id === id);
+            if (!server || !server.ranks) return;
+            const target = direction === 'left' ? rankIndex - 1 : rankIndex + 1;
+            if (target < 0 || target >= server.ranks.length) return;
+
+            [server.ranks[rankIndex], server.ranks[target]] = [server.ranks[target], server.ranks[rankIndex]];
+            updateUI();
+            localStorage.setItem('mtasa_hub_cache', JSON.stringify(serverData));
+            await supabaseClient.from('mtasa_rankings').update({ ranks: server.ranks }).eq('id', id);
+        }
+
+        async function moveServerPlace(index, direction) {
+            const target = direction === 'up' ? index - 1 : index + 1;
+            if (target < 0 || target >= serverData.length) return;
+
+            const current = serverData[index];
+            const nextNode = serverData[target];
+
+            const tempOrder = current.position_order;
+            current.position_order = nextNode.position_order;
+            nextNode.position_order = tempOrder;
+
+            serverData.sort((a, b) => a.position_order - b.position_order);
+            updateUI();
+            localStorage.setItem('mtasa_hub_cache', JSON.stringify(serverData));
+
+            await supabaseClient.from('mtasa_rankings').update({ position_order: current.position_order }).eq('id', current.id);
+            await supabaseClient.from('mtasa_rankings').update({ position_order: tempOrder }).eq('id', nextNode.id);
+        }
+
+        async function deleteInlineRank(id, rankIndex) {
+            const server = serverData.find(s => s.id === id);
+            if (server && server.ranks) {
+                server.ranks.splice(rankIndex, 1);
+                updateUI();
+                localStorage.setItem('mtasa_hub_cache', JSON.stringify(serverData));
+                await supabaseClient.from('mtasa_rankings').update({ ranks: server.ranks }).eq('id', id);
+            }
+        }
+
+        async function deleteServer(id) {
+            serverData = serverData.filter(s => s.id !== id);
+            updateUI();
+            localStorage.setItem('mtasa_hub_cache', JSON.stringify(serverData));
+            await supabaseClient.from('mtasa_rankings').delete().eq('id', id);
+        }
+
+        function switchView(viewId) {
+            document.getElementById('clientView').classList.add('hidden');
+            document.getElementById('loginView').classList.add('hidden');
+            document.getElementById('adminView').classList.add('hidden');
+            document.getElementById(viewId).classList.remove('hidden');
+            updateUI();
+        }
+
+        function handleLogin() {
+            const inputPass = document.getElementById('adminPassword').value;
+            if (inputPass === 'bimsararoyal@#') { 
+                switchView('adminView'); 
+            } else { 
+                alert("Security Alert: Invalid Credentials."); 
+            }
+            document.getElementById('adminPassword').value = '';
+        }
+        
+        function logout() { switchView('clientView'); }
+
+        function getColorClasses(c) {
+            if(c === 'red') return "bg-red-500/10 text-red-400 border-red-500/20";
+            if(c === 'blue') return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+            if(c === 'green') return "bg-green-500/10 text-green-400 border-green-500/20";
+            return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
+        }
+
+        function renderClientEngine() {
+            const host = document.getElementById('clientChartRows');
+            host.innerHTML = '';
+            serverData.forEach((server, index) => {
+                const el = document.createElement('div');
+                el.className = "flex items-center px-5 py-4 text-xs text-gray-300 rounded-2xl bg-white/[0.01] border border-white/[0.03] hover:bg-white/[0.04] hover:border-white/10 transition-all duration-300 cursor-pointer backdrop-blur-md transform hover:-translate-y-[1px]";
+                el.setAttribute('onclick', `openPreview(${server.id})`);
+                let ranks = server.ranks || [];
+                let badges = ranks.map(r => `<span class="border text-[10px] px-2 py-0.5 rounded-md font-bold ${getColorClasses(r.color)}">${r.name}</span>`).join(' ');
+                el.innerHTML = `
+                    <div class="w-[8%] font-black text-white/50 text-sm">${index + 1}</div>
+                    <div class="w-[35%] font-bold text-white flex items-center gap-1.5">${server.name} <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-20"></i></div>
+                    <div class="w-[22%] font-mono text-gray-400 text-[11px]">${server.ip}</div>
+                    <div class="w-[35%] flex flex-wrap gap-1.5">${badges || '<span class="text-gray-600 italic text-[11px]">Unassigned</span>'}</div>
+                `;
+                host.appendChild(el);
+            });
+        }
+
+        function renderAdminEngine() {
+            const host = document.getElementById('adminChartRows');
+            if(!host) return;
+            host.innerHTML = '';
+            serverData.forEach((server, index) => {
+                const el = document.createElement('div');
+                el.className = "flex items-start px-4 py-4 text-xs text-gray-300 border-b border-white/[0.03] bg-white/[0.005]";
+                let ranks = server.ranks || [];
+                let badges = ranks.map((r, i) => `
+                    <div class="flex items-center space-x-1 border border-white/10 bg-black/40 px-2 py-0.5 rounded-lg text-[10px]">
+                        <span>${r.name}</span>
+                        <button onclick="moveRank(${server.id}, ${i}, 'left')"><i class="fa-solid fa-caret-left text-gray-500 hover:text-white"></i></button>
+                        <button onclick="moveRank(${server.id}, ${i}, 'right')"><i class="fa-solid fa-caret-right text-gray-500 hover:text-white"></i></button>
+                        <button onclick="deleteInlineRank(${server.id}, ${i})" class="text-red-500"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                `).join(' ');
+
+                el.innerHTML = `
+                    <div class="w-[8%] flex space-x-1 pt-0.5">
+                        <button onclick="moveServerPlace(${index}, 'up')" class="bg-white/[0.04] border border-white/10 hover:bg-white/10 p-1 rounded-md"><i class="fa-solid fa-angle-up"></i></button>
+                        <button onclick="moveServerPlace(${index}, 'down')" class="bg-white/[0.04] border border-white/10 hover:bg-white/10 p-1 rounded-md"><i class="fa-solid fa-angle-down"></i></button>
+                    </div>
+                    <div class="w-[18%] text-white font-bold pt-1.5">${server.name}</div>
+                    <div class="w-[12%] text-gray-400 font-mono pt-1.5">${server.ip}</div>
+                    <div class="w-[42%] space-y-2 bg-black/20 border border-white/[0.04] p-2.5 rounded-xl shadow-inner">
+                        <div class="flex flex-wrap gap-1">${badges || '<span class="text-gray-600 italic">No nodes configured</span>'}</div>
+                        <div class="flex space-x-1.5 max-w-xs pt-1">
+                            <input type="text" id="inlineInput-${server.id}" placeholder="Node tag..." class="bg-black/50 text-white text-[11px] px-2 py-1 rounded-lg w-full border border-white/5 focus:outline-none">
+                            <select id="inlineColor-${server.id}" class="bg-neutral-900 border border-white/5 text-[11px] rounded-lg text-white px-1"><option value="red">Red</option><option value="blue">Blue</option><option value="green">Green</option><option value="yellow">Yellow</option></select>
+                            <button onclick="addInlineRank(${server.id})" class="bg-blue-600 text-white px-2.5 rounded-lg text-xs font-bold">+</button>
+                        </div>
+                    </div>
+                    <div class="w-[20%] text-center space-x-1.5 pt-1">
+                        <button onclick="openAdminEdit(${server.id})" class="bg-amber-500/10 border border-amber-500/20 text-amber-400 px-3 py-1.5 rounded-xl text-[11px] hover:bg-amber-500/20"><i class="fa-solid fa-pen-to-square"></i> Config</button>
+                        <button onclick="deleteServer(${server.id})" class="text-red-500 p-1.5 bg-red-500/5 border border-red-500/10 rounded-xl"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `;
+                host.appendChild(el);
+            });
+        }
+
+        window.onload = initSpeedEngine;
+        setInterval(loadFromSupabase, 12000);
+    </script>
+</body>
+</html>
